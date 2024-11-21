@@ -2,6 +2,7 @@ import serial
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from scipy.ndimage import zoom
 
 # Function to read 8 rows of data via serial communication after receiving "Print"
 def read_matrix_from_serial(serial_port):
@@ -13,12 +14,12 @@ def read_matrix_from_serial(serial_port):
     ax = fig.add_subplot(111, projection='3d')
 
     # Create x and y coordinates for the grid (row and column indices)
-    x = np.arange(0, 8)
-    y = np.arange(0, 8)
+    x = np.arange(0, 32)
+    y = np.arange(0, 32)
     x, y = np.meshgrid(x, y)  # Create a meshgrid for plotting
     
     # Initialize a surface plot with an empty matrix
-    matrix = np.zeros((8, 8))
+    matrix = np.zeros((32, 32))
     surf = ax.plot_surface(x, y, matrix, cmap='RdYlGn', edgecolor='none')
     
     # Add color bar to show the value scale
@@ -30,7 +31,9 @@ def read_matrix_from_serial(serial_port):
     ax.set_zlabel('Z Axis (Values)')
     
     # Set fixed Z-axis limits (e.g., from 0 to 1000)
-    ax.set_zlim(0, 400)
+    ax.set_zlim(0, 300)
+
+    isFirst = True
 
     while True:
         # Wait for the "Print" message to start reading a new matrix
@@ -51,26 +54,35 @@ def read_matrix_from_serial(serial_port):
                         print(row)
                         
                         if len(row) == 8:  # Ensure it's a valid row
-                            rows.append(row)
+                            rows.append(np.array(row))
                 
                 # Convert the list of rows into a NumPy array (our 8x8 matrix)
                 matrix = np.array(rows)
 
-                # Limit max value
-                matrix = np.clip(matrix, a_min=0, a_max=400)
-                
-                # Clear the previous surface plot
-                ax.clear()
-                
-                # Plot the new surface with updated data
-                surf = ax.plot_surface(x, y, matrix, cmap='RdYlGn', edgecolor='none')
+                matrix = zoom(matrix, zoom=4, order=1)
 
-                # Set fixed Z-axis limits (e.g., from 0 to 1000)
-                ax.set_zlim(0, 400)
-                
-                # Redraw the canvas to update the plot in real-time
-                fig.canvas.draw()
-                fig.canvas.flush_events()
+                if isFirst:
+                    firstMatrix = matrix
+                    isFirst = False
+
+                else:
+                    matrix = abs(matrix - firstMatrix)
+
+                    # Limit max value
+                    matrix = np.clip(matrix, a_min=0, a_max=300)
+                    
+                    # Clear the previous surface plot
+                    ax.clear()
+                    
+                    # Plot the new surface with updated data
+                    surf = ax.plot_surface(x, y, matrix, cmap='RdYlGn', edgecolor='none')
+
+                    # Set fixed Z-axis limits (e.g., from 0 to 1000)
+                    ax.set_zlim(0, 300)
+                    
+                    # Redraw the canvas to update the plot in real-time
+                    fig.canvas.draw()
+                    fig.canvas.flush_events()
 
 # Main function to continuously read and plot matrices
 def main():
