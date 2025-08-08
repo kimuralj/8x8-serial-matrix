@@ -24,8 +24,8 @@ class_names = ['First', 'Second', 'Third', 'Fourth']
 def predict_image(image_path, model, img_size):
     img = keras.preprocessing.image.load_img(image_path, target_size=img_size)
     img_array = keras.preprocessing.image.img_to_array(img) / 255.0
-    img_array = np.expand_dims(img_array, axis=0)  # Adicionar dimensão de batch
-    predictions = model.predict(img_array, verbose=0) # verbose=0 para não imprimir cada previsão
+    img_array = np.expand_dims(img_array, axis=0)  # Add batch dimension
+    predictions = model.predict(img_array, verbose=0) # verbose=0 to not print each prediction
     class_index = np.argmax(predictions)
     return class_index
 
